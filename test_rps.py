@@ -1,13 +1,19 @@
 from locust import HttpUser, task, between
-
+import uuid
 
 class WalletUser(HttpUser):
     host = "http://localhost:5000"
     wait_time = between(0.1, 0.5)
 
-    def __init__(self, environment):
-        super().__init__(environment)
-        self.wallet_uuid = "4a0df525-0e51-4b81-be4f-ecd765fadb70"
+    def on_start(self):
+        # Создание нового кошелька перед началом теста
+        response = self.client.post("/api/v1/wallets")
+        if response.status_code == 201:
+            wallet_data = response.json()
+            self.wallet_uuid = wallet_data["wallet_id"]
+        else:
+            print("Ошибка при создании кошелька.")
+            self.wallet_uuid = None
 
     @task(2)
     def deposit_money(self):

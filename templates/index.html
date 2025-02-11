@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            white-space: pre-wrap; /* Для отображения длинных сообщений */
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wallet Manager</h1>
+
+        <!-- Форма для создания кошелька -->
+        <div class="form-group">
+            <h2>Создать кошелек</h2>
+            <button onclick="createWallet()">Создать кошелек</button>
+        </div>
+
+        <!-- Форма для пополнения/снятия средств -->
+        <div class="form-group">
+            <h2>Пополнить/снять средства</h2>
+            <label for="wallet_uuid">UUID кошелька:</label>
+            <input type="text" id="wallet_uuid" placeholder="Введите UUID кошелька">
+            <label for="operation_type">Тип операции:</label>
+            <select id="operation_type">
+                <option value="DEPOSIT">Пополнить</option>
+                <option value="WITHDRAW">Снять</option>
+            </select>
+            <label for="amount">Сумма:</label>
+            <input type="number" id="amount" placeholder="Введите сумму">
+            <button onclick="performOperation()">Выполнить операцию</button>
+        </div>
+
+        <!-- Форма для просмотра баланса -->
+        <div class="form-group">
+            <h2>Просмотреть баланс</h2>
+            <label for="balance_uuid">UUID кошелька:</label>
+            <input type="text" id="balance_uuid" placeholder="Введите UUID кошелька">
+            <button onclick="getBalance()">Показать баланс</button>
+        </div>
+
+        <!-- Блок для отображения результата -->
+        <div class="response" id="response"></div>
+    </div>
+
+    <script>
+        // Функция для создания кошелька
+        async function createWallet() {
+            const response = await fetch('/api/v1/wallets', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            handleResponse(response, data);
+        }
+
+        // Функция для выполнения операции (пополнение/снятие)
+        async function performOperation() {
+            const wallet_uuid = document.getElementById('wallet_uuid').value;
+            const operation_type = document.getElementById('operation_type').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            const response = await fetch(`/api/v1/wallets/${wallet_uuid}/operation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    operationType: operation_type,
+                    amount: amount
+                })
+            });
+            const data = await response.json();
+            handleResponse(response, data);
+        }
+
+        // Функция для получения баланса
+        async function getBalance() {
+            const wallet_uuid = document.getElementById('balance_uuid').value;
+            const response = await fetch(`/api/v1/wallets/${wallet_uuid}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            handleResponse(response, data);
+        }
+
+        // Обработка ответа от сервера и отображение результата
+        function handleResponse(response, data) {
+            const responseElement = document.getElementById('response');
+            responseElement.innerText = `Status Code: ${response.status}\nMessage: ${JSON.stringify(data, null, 2)}`;
+
+            if (!response.ok) {
+                responseElement.classList.add('error');
+                responseElement.classList.remove('success');
+            } else {
+                responseElement.classList.add('success');
+                responseElement.classList.remove('error');
+            }
+        }
+    </script>
+</body>
+</html>

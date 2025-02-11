@@ -10,6 +10,7 @@ from flask_migrate import Migrate
 from waitress import serve
 import redis
 from redis.lock import Lock
+import time
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -19,7 +20,6 @@ logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
-# Конфигурация базы данных
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///wallets.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -46,6 +46,7 @@ class Wallet(db.Model):
 
 # Инициализация базы данных
 with app.app_context():
+    time.sleep(4)
     db.create_all()
 
 
@@ -115,20 +116,15 @@ def create_wallet():
     db.session.commit()
     return jsonify({"message": "Wallet created", "wallet_id": new_wallet.uuid, "balance": new_wallet.balance}), 201
 
+
 # Просмотр всех кошельков
 @app.route('/api/v1/wallets', methods=['GET'])
 def get_all_wallets():
     wallets = Wallet.query.all()
-    wallet_list = [{"uuid": str(wallet.uuid), "balance": wallet.balance} for wallet in
-                   wallets]
+    wallet_list = [{"uuid": str(wallet.uuid), "balance": wallet.balance} for wallet in wallets]
     return jsonify(wallet_list), 200
 
 
 @app.route('/')
 def home():
     return render_template('index.html')
-
-
-# Запуск приложения
-if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=5000)

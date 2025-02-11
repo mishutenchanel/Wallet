@@ -7,8 +7,10 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy  # Ждем, пока база данных не станет готова
+      redis:
+        condition: service_started  # Redis будет доступен сразу
     env_file:
       - .env
     restart: always
@@ -23,6 +25,12 @@ services:
       - .env
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]  # Проверка готовности PostgreSQL
+      interval: 5s
+      retries: 10
+      start_period: 10s
+      timeout: 5s
 
   redis:
     image: redis:7
@@ -30,6 +38,29 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  tests:
+    build: .
+    container_name: flask_wallet_tests
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    command: pytest  # Команда для запуска тестов
+
+  locust:
+    image: locustio/locust:2.32.8
+    container_name: flask_wallet_locust
+    ports:
+      - "8089:8089"  # Порт для веб-интерфейса Locust
+    volumes:
+      - .:/mnt/locust  # Монтируем текущую директорию с locustfile.py
+    command: -f /mnt/locust/test_rps.py --host=http://web:5000
+    depends_on:
+      - web
+      - db
+      - redis
 
 volumes:
   pg_data:

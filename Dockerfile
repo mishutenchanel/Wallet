@@ -17,4 +17,4 @@ COPY . /app
 EXPOSE 5000
 
 # Команда для запуска приложения
-CMD ["waitress-serve", "--call", "app:create_app"]
+CMD ["waitress-serve", "--host", "0.0.0.0", "--port", "5000", "app:app"]
